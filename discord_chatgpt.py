@@ -25,12 +25,35 @@ def load_system_content(past_messages):
         past_messages.append(system)
         return
 
+def summarize_history(past_messages):
+    chat_history = ""
+    for m in past_messages:
+        if 'system' in m.values():
+            continue
+        chat_history = chat_history + m['content'] + '\n'
+    messages = [{'role': 'user', 'content': '以下の会話を簡潔にまとめてください。\n' + chat_history}]
+    response = openai.ChatCompletion.create(
+      model="gpt-3.5-turbo",
+      messages=messages,
+      temperature=0.9,
+      frequency_penalty=0.6,
+      presence_penalty=0.6,
+    )
+    print(response['choices'][0]['message']['content'])
+    return response['choices'][0]['message']['content']
+
 # 履歴読み込み
 path = "./messages.json"
 past_messages:list = []
 if os.path.isfile(path):
     with open(path, "r") as f:
         past_messages = json.load(f)
+        # 前回のセッションの会話を要約し、systemに追加。使用量節約のため会話履歴は削除。
+        summary = summarize_history(past_messages)
+        past_messages.clear()
+        load_system_content(past_messages)
+        past_messages[0]['content'] += '\n 以下にこれまでの会話の要約を示します。\n' + summary
+        
 if len(past_messages) == 0:
     load_system_content(past_messages)
 
@@ -61,7 +84,7 @@ async def on_message(message):
     response = openai.ChatCompletion.create(
       model="gpt-3.5-turbo",
       messages=past_messages,
-      temperature=0.9,
+      temperature=1,
       frequency_penalty=0.6,
       presence_penalty=0.6,
     )
