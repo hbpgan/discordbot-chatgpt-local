@@ -1,0 +1,1 @@
+ローカルで動かすgpt-3.5-turboのdiscord bot
