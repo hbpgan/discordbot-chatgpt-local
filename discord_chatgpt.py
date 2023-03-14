@@ -18,6 +18,13 @@ endpoint = "https://api.chatgpt.com/v1/chat"
 intents = discord.Intents.all()
 intents.members = True
 
+def load_system_content(past_messages):
+    with open("system_content.txt", "r") as f:
+        system_content = f.read()
+        system = {"role": "system", "content": system_content}
+        past_messages.append(system)
+        return
+
 # 履歴読み込み
 path = "./messages.json"
 past_messages:list = []
@@ -25,10 +32,7 @@ if os.path.isfile(path):
     with open(path, "r") as f:
         past_messages = json.load(f)
 if len(past_messages) == 0:
-    with open("system_content.txt", "r") as f:
-        system_content = f.read()
-        system = {"role": "system", "content": system_content}
-        past_messages.append(system)
+    load_system_content(past_messages)
 
 # botの接続
 client = discord.Client(intents=intents)
@@ -46,6 +50,11 @@ async def on_message(message):
     # 指定したチャンネルとユーザーでないと反応しない
     if message.author.bot or message.channel.id != channel_id or message.author.id != user_id:
         return print(message.content)
+    
+    if message.content == '/deletememory':
+        past_messages.clear()
+        load_system_content(past_messages)
+        return print("記憶を消去しました")
 
     user_message = {"role": "user", "content": message.content}
     past_messages.append(user_message)
